@@ -17,6 +17,7 @@ import (
 )
 
 func main() {
+	PrintIPs()
 	PORT := os.Getenv("PORT")
 	useCfg := flag.Bool("config", false, "use a file configuration")
 	getExample := flag.Bool("example", false, "write a configuration example file")
@@ -154,3 +155,40 @@ const Example = `{
         }
     ]
 }`
+
+func PrintIPs() {
+	// Obtener todas las interfaces de red
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		fmt.Println("Error al obtener las interfaces de red:", err)
+		return
+	}
+
+	// Iterar sobre las interfaces de red
+	for _, i := range interfaces {
+		// Obtener todas las direcciones IP asociadas a la interfaz
+		addrs, err := i.Addrs()
+		if err != nil {
+			fmt.Println("Error al obtener las direcciones IP de la interfaz:", err)
+			continue
+		}
+
+		// Iterar sobre las direcciones IP
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+
+			// Verificar si la dirección IP es IPv4 o IPv6
+			if ip.To4() != nil {
+				fmt.Println("IPv4:", ip.String())
+			} else if ip.To16() != nil {
+				fmt.Println("IPv6:", ip.String())
+			}
+		}
+	}
+}
