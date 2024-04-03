@@ -30,7 +30,7 @@ jobs:
       run: go mod download
 
     - name: Build
-      run: go build -v -o app ./...
+      run: go build -v -o ./app .
 
     - name: Get public IP
       run: echo "::set-output name=ip::$(curl -s https://api.ipify.org)"
