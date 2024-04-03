@@ -10,4 +10,4 @@ RUN go build -o ./app .
 
 EXPOSE 8080
 
-CMD ["./app"]
+CMD ["./app", "-get"]

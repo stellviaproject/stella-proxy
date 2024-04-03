@@ -20,7 +20,8 @@ func main() {
 	PORT := os.Getenv("PORT")
 	useCfg := flag.Bool("config", false, "use a file configuration")
 	getExample := flag.Bool("example", false, "write a configuration example file")
-	//usePrint := flag.Bool("ifaces", false, "print all interfaces")
+	usePrint := flag.Bool("ifaces", false, "print all interfaces")
+	useGet := flag.Bool("get", false, "redirect all GET to a CONNECT HTTP method with internal wrapper")
 	flag.Parse()
 	var port int
 	if p, err := strconv.Atoi(PORT); err != nil {
@@ -28,7 +29,9 @@ func main() {
 	} else {
 		port = p
 	}
-	PrintIPs()
+	if *usePrint {
+		PrintIPs()
+	}
 	proxy := goproxy.NewProxyHttpServer()
 	cfg := NewConfig()
 	if *useCfg {
@@ -51,7 +54,24 @@ func main() {
 	}
 	proxy.Tr = GetTransport(dialer.DialContext, cfg.MaxRetry, cfg.Chain)
 	log.Printf("proxy is running at: 0.0.0.0:%d\n", port)
-	log.Println(http.ListenAndServe(fmt.Sprintf(":%d", port), proxy))
+	if *useGet {
+		log.Println(http.ListenAndServe(fmt.Sprintf(":%d", port), &GetWrapper{
+			proxy: proxy,
+		}))
+	} else {
+		log.Println(http.ListenAndServe(fmt.Sprintf(":%d", port), proxy))
+	}
+}
+
+type GetWrapper struct {
+	proxy *goproxy.ProxyHttpServer
+}
+
+func (wr *GetWrapper) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" && (r.URL.Path == "" || r.URL.Path == "/") {
+		r.Method = "CONNECT"
+	}
+	wr.proxy.ServeHTTP(w, r)
 }
 
 func GetTransport(dialContext transport.DialContext, maxRetry int, chain []ProxyConfig) *http.Transport {
@@ -81,7 +101,7 @@ func GetTransport(dialContext transport.DialContext, maxRetry int, chain []Proxy
 
 func WrapChain(dialContext transport.DialContext, maxRetry int, chain []ProxyConfig) transport.DialContext {
 	for _, proxy := range chain {
-		dialContext = transport.WrapDialContext(dialContext, maxRetry, proxy.IsHTTPS, proxy.IsNTLM, proxy.InsecureSkip, proxy.ProxyAddr, proxy.ProxyUser, proxy.ProxyPassword, proxy.ProxyDomain)
+		dialContext = transport.WrapDialContext(dialContext, maxRetry, proxy.IsGet, proxy.IsHTTPS, proxy.IsNTLM, proxy.InsecureSkip, proxy.ProxyAddr, proxy.ProxyUser, proxy.ProxyPassword, proxy.ProxyDomain)
 	}
 	return dialContext
 }
@@ -99,6 +119,7 @@ type ProxyConfig struct {
 	IsHTTPS       bool   `json:"is-https"`
 	InsecureSkip  bool   `json:"insecure-skip"`
 	IsNTLM        bool   `json:"is-ntlm"`
+	IsGet         bool   `json:"is-get"`
 	ProxyUser     string `json:"user"`
 	ProxyPassword string `json:"password"`
 	ProxyDomain   string `json:"domain"`
@@ -141,6 +162,7 @@ const Example = `{
             "addr": "127.0.0.1:8080",
             "is-https": false,
             "is-ntlm": false,
+			"is-get": false,
             "insecure-skip": false,
             "user": "",
             "password": "",
@@ -149,6 +171,7 @@ const Example = `{
             "addr": "192.168.43.1:8080",
             "is-https": false,
             "is-ntlm": false,
+			"is-get": false,
             "insecure-skip": false,
             "user": "",
             "password": "",

@@ -20,11 +20,11 @@ import (
 
 type DialContext func(ctx context.Context, network, addr string) (net.Conn, error)
 
-func WrapDialContext(dialContext DialContext, maxRetry int, isHTTPS, isNtlm, insecureSkip bool, proxyAddress, proxyUsername, proxyPassword, proxyDomain string) DialContext {
+func WrapDialContext(dialContext DialContext, maxRetry int, isGet, isHTTPS, isNtlm, insecureSkip bool, proxyAddress, proxyUsername, proxyPassword, proxyDomain string) DialContext {
 	if isNtlm {
-		return wrapNTLM(dialContext, maxRetry, isHTTPS, insecureSkip, proxyAddress, proxyUsername, proxyPassword, proxyDomain)
+		return wrapNTLM(dialContext, maxRetry, isGet, isHTTPS, insecureSkip, proxyAddress, proxyUsername, proxyPassword, proxyDomain)
 	}
-	return wrapBasic(dialContext, maxRetry, isHTTPS, insecureSkip, proxyAddress, proxyUsername, proxyPassword)
+	return wrapBasic(dialContext, maxRetry, isGet, isHTTPS, insecureSkip, proxyAddress, proxyUsername, proxyPassword)
 }
 
 func dialWithDialContext(dialContext DialContext, ctx context.Context, skip, isHTTPS bool, network, addr string) (net.Conn, error) {
@@ -46,7 +46,7 @@ func dialWithDialContext(dialContext DialContext, ctx context.Context, skip, isH
 	return conn, nil
 }
 
-func wrapBasic(dialContext DialContext, maxRetry int, isHTTPS, insecureSkip bool, proxyAddress, proxyUsername, proxyPassword string) DialContext {
+func wrapBasic(dialContext DialContext, maxRetry int, isGet, isHTTPS, insecureSkip bool, proxyAddress, proxyUsername, proxyPassword string) DialContext {
 	max := 0
 	if maxRetry < 0 {
 		max = math.MaxInt
@@ -67,8 +67,12 @@ func wrapBasic(dialContext DialContext, maxRetry int, isHTTPS, insecureSkip bool
 		header := make(http.Header)
 		header.Set("Proxy-Authorization", "Basic "+auth)
 		header.Set("Proxy-Connection", "Keep-Alive")
+		method := "CONNECT"
+		if isGet {
+			method = "GET"
+		}
 		connect := &http.Request{
-			Method: "CONNECT",
+			Method: method,
 			URL:    &url.URL{Opaque: addr},
 			Host:   addr,
 			Header: header,
@@ -93,7 +97,7 @@ func wrapBasic(dialContext DialContext, maxRetry int, isHTTPS, insecureSkip bool
 	}
 }
 
-func wrapNTLM(dialContext DialContext, maxRetry int, isHTTPS, insecureSkip bool, proxyAddress, proxyUsername, proxyPassword, proxyDomain string) DialContext {
+func wrapNTLM(dialContext DialContext, maxRetry int, isGet, isHTTPS, insecureSkip bool, proxyAddress, proxyUsername, proxyPassword, proxyDomain string) DialContext {
 	max := 0
 	if maxRetry < 0 {
 		max = math.MaxInt
@@ -120,8 +124,12 @@ func wrapNTLM(dialContext DialContext, maxRetry int, isHTTPS, insecureSkip bool,
 		header := make(http.Header)
 		header.Set("Proxy-Authorization", fmt.Sprintf("NTLM %s", base64.StdEncoding.EncodeToString(negotiateMessage)))
 		header.Set("Proxy-Connection", "Keep-Alive")
+		method := "CONNECT"
+		if isGet {
+			method = "GET"
+		}
 		connect := &http.Request{
-			Method: "CONNECT",
+			Method: method,
 			URL:    &url.URL{Opaque: addr},
 			Host:   addr,
 			Header: header,
@@ -173,7 +181,7 @@ func wrapNTLM(dialContext DialContext, maxRetry int, isHTTPS, insecureSkip bool,
 		log.Printf("ntlm> NTLM authorization: '%s'\n\r", base64.StdEncoding.EncodeToString(authenticateMessage))
 		header.Set("Proxy-Authorization", fmt.Sprintf("NTLM %s", base64.StdEncoding.EncodeToString(authenticateMessage)))
 		connect = &http.Request{
-			Method: "CONNECT",
+			Method: method,
 			URL:    &url.URL{Opaque: addr},
 			Host:   addr,
 			Header: header,
