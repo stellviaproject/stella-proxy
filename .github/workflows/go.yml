@@ -42,5 +42,7 @@ jobs:
         echo ${{ steps.ip.outputs.ipv4 }}
         echo ${{ steps.ip.outputs.ipv6 }}
 
-    - name: Run
+    - name: Run Print Ifaces
+      run: ./app -ifaces
+    - name:
       run: ./app
