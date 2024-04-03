@@ -53,12 +53,14 @@ func main() {
 		KeepAlive: time.Duration(float64(cfg.KeepAlive) * float64(time.Second)),
 	}
 	proxy.Tr = GetTransport(dialer.DialContext, cfg.MaxRetry, cfg.Chain)
-	log.Printf("proxy is running at: 0.0.0.0:%d\n", port)
 	if *useGet {
+		log.Println("use get is active")
+		log.Printf("proxy is running at: 0.0.0.0:%d\n", port)
 		log.Println(http.ListenAndServe(fmt.Sprintf(":%d", port), &GetWrapper{
 			proxy: proxy,
 		}))
 	} else {
+		log.Printf("proxy is running at: 0.0.0.0:%d\n", port)
 		log.Println(http.ListenAndServe(fmt.Sprintf(":%d", port), proxy))
 	}
 }
