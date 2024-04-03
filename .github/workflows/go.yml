@@ -1,0 +1,42 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Go
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.21
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Build
+      run: go build -v -o app ./...
+
+    - name: Get public IP
+      run: echo "::set-output name=ip::$(curl -s https://api.ipify.org)"
+
+    - name: Display public IP
+      run: echo "Public IP of GitHub Actions Runner:${{steps.get_ip.outputs.ip}}"
+
+    - name: Run
+      run: ./app
