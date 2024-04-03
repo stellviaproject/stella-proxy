@@ -20,7 +20,7 @@ func main() {
 	PORT := os.Getenv("PORT")
 	useCfg := flag.Bool("config", false, "use a file configuration")
 	getExample := flag.Bool("example", false, "write a configuration example file")
-	usePrint := flag.Bool("ifaces", false, "print all interfaces")
+	//usePrint := flag.Bool("ifaces", false, "print all interfaces")
 	flag.Parse()
 	var port int
 	if p, err := strconv.Atoi(PORT); err != nil {
@@ -28,10 +28,7 @@ func main() {
 	} else {
 		port = p
 	}
-	if *usePrint {
-		PrintIPs()
-		return
-	}
+	PrintIPs()
 	proxy := goproxy.NewProxyHttpServer()
 	cfg := NewConfig()
 	if *useCfg {

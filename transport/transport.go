@@ -38,7 +38,7 @@ func dialWithDialContext(dialContext DialContext, ctx context.Context, skip, isH
 		})
 		err = tlsConn.Handshake()
 		if err != nil {
-			log.Printf("tls handshake error with %s failed with error: %v", addr, err)
+			log.Printf("tls handshake error with %s failed with error: %v\n", addr, err)
 			return nil, err
 		}
 		conn = tlsConn
@@ -56,9 +56,13 @@ func wrapBasic(dialContext DialContext, maxRetry int, isHTTPS, insecureSkip bool
 		conn, err := dialWithDialContext(dialContext, ctx, isHTTPS, insecureSkip, network, proxyAddress)
 		retry := 0
 		for retry < max && err != nil {
-			log.Printf("dial to proxy address %s failed with error: %v", proxyAddress, err)
+			log.Printf("dial to proxy address %s failed with error: %v\n", proxyAddress, err)
 			conn, err = dialWithDialContext(dialContext, ctx, isHTTPS, insecureSkip, network, proxyAddress)
 			retry++
+		}
+		if err != nil {
+			log.Printf("dial failed with error: %v\n", err)
+			return nil, err
 		}
 		header := make(http.Header)
 		header.Set("Proxy-Authorization", "Basic "+auth)
@@ -98,9 +102,13 @@ func wrapNTLM(dialContext DialContext, maxRetry int, isHTTPS, insecureSkip bool,
 		conn, err := dialWithDialContext(dialContext, ctx, isHTTPS, insecureSkip, network, proxyAddress)
 		retry := 0
 		for retry < max && err != nil {
-			log.Printf("dial to proxy address %s failed with error: %v", proxyAddress, err)
+			log.Printf("dial to proxy address %s failed with error: %v\n", proxyAddress, err)
 			conn, err = dialWithDialContext(dialContext, ctx, isHTTPS, insecureSkip, network, proxyAddress)
 			retry++
+		}
+		if err != nil {
+			log.Printf("dial failed with error: %v\n", err)
+			return nil, err
 		}
 		// NTLM Step 1: Send Negotiate Message
 		negotiateMessage, err := ntlmssp.NewNegotiateMessage(proxyDomain, "")
