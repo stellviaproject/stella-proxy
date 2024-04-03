@@ -32,11 +32,10 @@ jobs:
     - name: Build
       run: go build -v -o ./app .
 
-    - name: Set output
-       run: echo "ip=$(curl -s https://api.ipify.org)" >> $GITHUB_OUTPUT
-
-    - name: Display public IP
-      run: echo "Public IP of GitHub Actions Runner:${{steps.get_ip.outputs.ip}}"
+    - name: Print Public IP
+      run: |
+        echo ${{ steps.ip.outputs.ipv4 }}
+        echo ${{ steps.ip.outputs.ipv6 }}
 
     - name: Run
       run: ./app
